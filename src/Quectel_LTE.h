@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-
+#include <time.h>
 #include "Stopwatch.h"
 #include "AtSerial.h"
 
@@ -84,7 +84,9 @@ class Quectel_LTE
         bool switchEcho(bool on);
         bool checkSIMStatus(void);
         bool isAlive(uint32_t timeout = 5000);
-        bool getSignalStrength(int *buffer);        
+        bool getSignalStrength(int *buffer); 
+        bool SyncTime(const char* host);
+        bool GetTime(struct tm* tim);
 /************************** Network startup **************************/                    
         bool waitForNetworkRegister(uint32_t timeout = 120000);
         bool Activate(const char* APN, const char* userName, const char* password, long waitForRegistTimeout = 120000);
@@ -103,7 +105,8 @@ class Quectel_LTE
         bool httpSetUrl(const char *url, uint8_t timeoutSec = 80);
         uint32_t httpGet(const char *url, char *data, uint16_t dataSize, uint32_t timeout = 60000);
         uint32_t httpPost(const char *url, char *data, uint16_t dataSize, uint32_t timeout = 60000);
-/************************** MQTT **************************/        
+/************************** MSM **************************/   
+
         
 /************************** GNSS **************************/
         bool gpsOn(void);

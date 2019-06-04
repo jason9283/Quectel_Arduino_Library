@@ -267,6 +267,70 @@ bool Quectel_LTE::getSignalStrength(int *buffer)
 }
 
 /**
+ * Synchronize Time with provided NTP server
+ * @param host is NTP server to request time
+*/
+bool Quectel_LTE::SyncTime(const char* host)
+{
+  // AT+QNTP=1,"cn.ntp.org.cn"
+
+  _AtSerial.CleanBuffer(_RxBuf, sizeof(_RxBuf));
+  _AtSerial.WriteCommand("AT+QNTP=1,\"");
+  _AtSerial.WriteCommand(host);
+  _AtSerial.WriteCommand("\"\r\n");
+  if(!_AtSerial.ReadResponseUntil_EOL((char*)_RxBuf, sizeof(_RxBuf), "+QNTP:", CMD, 5000)) return RET_ERR;
+  debugPrintOut(_RxBuf);
+
+  return RET_OK;	
+}
+
+/**
+ * Get Time 
+ * 
+*/
+bool Quectel_LTE::GetTime(struct tm* tim)
+{
+  // AT+CCLK? 
+  // +CCLK: "19/06/04,22:33:48+32"
+
+  char *p = NULL;
+
+  _AtSerial.CleanBuffer(_RxBuf, sizeof(_RxBuf));
+  _AtSerial.WriteCommand("AT+CCLK?\r\n");
+  if(!_AtSerial.ReadResponseUntil_EOL((char*)_RxBuf, sizeof(_RxBuf), "+CCLK:", CMD, 1000)) return RET_ERR;
+  debugPrint(_RxBuf);
+
+  //parse +CCLK: "18/06/04,22:33:48+32"  
+  if(NULL == (p = strstr(_RxBuf, "+CCLK:"))) return RET_ERR;
+  p = strtok(p, "\"");
+  p = strtok(NULL, "\"");
+
+  if (strlen(p) != 20) return RET_ERR;
+  
+	if (*(p+2) != '/') return RET_ERR;
+	if (*(p+5) != '/') return RET_ERR;
+	if (*(p+8) != ',') return RET_ERR;
+	if (*(p+11) != ':') return RET_ERR;
+	if (*(p+14) != ':') return RET_ERR;
+
+  int yearOffset = atoi(p);
+	tim->tm_year = (yearOffset >= 80 ? 1900 : 2000) + yearOffset;
+	tim->tm_mon = atoi(p+3) - 1;
+	tim->tm_mday = atoi(p+4);
+	tim->tm_hour = atoi(p+9);
+	tim->tm_min = atoi(p+12);
+	tim->tm_sec = atoi(p+15);
+	tim->tm_wday = 0;
+	tim->tm_yday = 0;
+	tim->tm_isdst = 0;
+  
+  // Update tm_wday and tm_yday
+  mktime(tim);
+
+  return RET_OK;	
+}
+
+/**
  * Set host server by ip/domain and port, then connect to the server 
  * @param sockid is local socket id
  * @param host is remote server ip or domain
